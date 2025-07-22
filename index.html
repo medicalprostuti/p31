@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ১ম অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "নিচের কোনটি মহাকর্ষীয় বিভবের একক নির্দেশ করে?",
+          options: {
+            a: "Nmkg⁻¹",
+            b: "Jkg",
+            c: "kgJ⁻¹",
+            d: "Nm⁻¹kg⁻¹",
+          },
+          correct: "a",
+          explanation:
+            "<p>মহাকর্ষীয় বিভব (V) হলো অসীম থেকে একক ভরের কোনো বস্তুকে মহাকর্ষীয় ক্ষেত্রের কোনো বিন্দুতে আনতে মহাকর্ষীয় বল দ্বারা সম্পন্ন কাজ।</p><br><p>মহাকর্ষীয় বিভব (V) = কৃত কাজ (W) / ভর (m)</p><br><ul><li>কাজের একক হলো জুল (J), যা নিউটন-মিটার (Nm) এর সমান।</li><li>ভরের একক হলো কিলোগ্রাম (kg)।</li></ul><br><p>সুতরাং, মহাকর্ষীয় বিভবের একক হবে জুল/কিলোগ্রাম (J/kg) অথবা নিউটন-মিটার/কিলোগ্রাম (Nm/kg)।</p><br><p>অপশন (a) <b>Nmkg⁻¹</b> মানে নিউটন-মিটার প্রতি কিলোগ্রাম, যা J/kg এর সমতুল্য।</p><ul><li>অপশন (b) Jkg মানে জুল কিলোগ্রাম, যা ভুল।</li><li>অপশন (c) kgJ⁻¹ মানে কিলোগ্রাম প্রতি জুল, যা ভুল।</li><li>অপশন (d) Nm⁻¹kg⁻¹ মানে নিউটন প্রতি মিটার প্রতি কিলোগ্রাম, যা ভুল।</li></ul>",
+        },
+        {
+          id: 2,
+          question: "মহাকর্ষীয় বিভবের মাত্রা কোনটি?",
+          options: {
+            a: "M⁰LT⁻¹",
+            b: "M⁰L²T⁻²",
+            c: "M⁰L⁻²T²",
+            d: "M²L²T²",
+          },
+          correct: "b",
+          explanation:
+            "<p>মহাকর্ষীয় বিভব (V) = কাজ (W) / ভর (m)</p><br><ul><li><b>কাজের মাত্রা:</b> কাজ = বল &#xD7; সরণ।</li><li>বলের মাত্রা = [M][L][T]<sup>-2</sup> (ভর &#xD7; ত্বরণ)</li><li>সরণের মাত্রা = [L]</li><li>সুতরাং, কাজের মাত্রা = [M][L]<sup>2</sup>[T]<sup>-2</sup>।</li></ul><br><ul><li><b>ভরের মাত্রা:</b> [M]</li></ul><br><p>এখন, মহাকর্ষীয় বিভবের মাত্রা = (কাজের মাত্রা) / (ভরের মাত্রা)</p><br><p>= ([M][L]<sup>2</sup>[T]<sup>-2</sup>) / [M]</p><br><p>= [M]<sup>(1-1)</sup>[L]<sup>2</sup>[T]<sup>-2</sup></p><br><p>= [M]<sup>0</sup>[L]<sup>2</sup>[T]<sup>-2</sup></p><br><p>সুতরাং, মহাকর্ষীয় বিভবের মাত্রা হলো <b>M⁰L²T⁻²</b>।</p>",
+        },
+        {
+          id: 3,
+          question:
+            "নিচের কোন স্থানে পৃথিবীর মহাকর্ষীয় ক্ষেত্রের তীব্রতা সর্বাধিক?",
+          options: {
+            a: "পৃথিবীর কেন্দ্রে",
+            b: "বিষুবীয় অঞ্চলে",
+            c: "মেরু অঞ্চলে",
+            d: "উপরের কোনোটিই নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>মহাকর্ষীয় ক্ষেত্রের তীব্রতা বলতে সাধারণত অভিকর্ষজ ত্বরণ (g) কেই বোঝানো হয়। অভিকর্ষজ ত্বরণের মান পৃথিবীর বিভিন্ন স্থানে ভিন্ন ভিন্ন হয়।</p><ul><li><b>পৃথিবীর কেন্দ্রে:</b> পৃথিবীর কেন্দ্রে মহাকর্ষীয় ক্ষেত্রের তীব্রতা <b>শূন্য</b> হয়।</li><li><b>বিষুবীয় অঞ্চলে:</b> বিষুবীয় অঞ্চলে পৃথিবীর আহ্নিক গতির কারণে সৃষ্ট কেন্দ্রবিমুখী বলের প্রভাব সর্বাধিক থাকে এবং পৃথিবীর ব্যাসার্ধ তুলনামূলকভাবে বেশি হওয়ায়, এখানে g এর মান <b>সর্বনিম্ন</b> (প্রায় 9.78 m/s<sup>2</sup>) হয়।</li><li><b>মেরু অঞ্চলে:</b> মেরু অঞ্চলে (90&#xB0; অক্ষাংশ) পৃথিবীর আহ্নিক গতির প্রভাব প্রায় শূন্য থাকে এবং পৃথিবীর আকৃতি কিছুটা চ্যাপ্টা হওয়ায় কেন্দ্র থেকে মেরুর দূরত্ব নিরক্ষীয় অঞ্চলের চেয়ে কম। এই দুটি কারণে মেরু অঞ্চলে g এর মান <b>সর্বাধিক</b> (প্রায় 9.83 m/s<sup>2</sup>) হয়।</li></ul><p>সুতরাং, পৃথিবীর মহাকর্ষীয় ক্ষেত্রের তীব্রতা সর্বাধিক হয় <b>মেরু অঞ্চলে</b>।</p>",
+        },
+        {
+          id: 4,
+          question: "অসীমে কোনো বস্তুর মহাকর্ষীয় বিভব কেমন হবে?",
+          options: {
+            a: "শূন্য",
+            b: "সর্বনিম্ন",
+            c: "সর্বোচ্চ",
+            d: "মাইনাস",
+          },
+          correct: "a",
+          explanation:
+            "<p>মহাকর্ষীয় বিভবকে সংজ্ঞানুসারে, অসীম থেকে একক ভরের কোনো বস্তুকে মহাকর্ষীয় ক্ষেত্রের কোনো বিন্দুতে আনতে মহাকর্ষীয় বল দ্বারা সম্পন্ন কাজ হিসেবে ধরা হয়। মহাকর্ষীয় বিভব (V) এর সূত্র হলো: V = -GM/r।</p><br><p>যখন r (দূরত্ব) অসীম হয় (r &#x2192; &#x221E;), তখন মহাকর্ষীয় বিভবের মান হয়:</p><br><p>V = -GM / &#x221E; = 0</p><br><p>অর্থাৎ, অসীম দূরত্বে মহাকর্ষীয় আকর্ষণ বলের প্রভাব থাকে না, তাই অসীম থেকে কোনো বস্তুকে আনতে কোনো কাজ করতে হয় না। এই কারণে অসীমে মহাকর্ষীয় বিভবের মান <b>শূন্য</b> ধরা হয়। মহাকর্ষীয় বিভবের মান সাধারণত ঋণাত্মক হয়, কারণ এটি একটি আকর্ষণমূলক ক্ষেত্র এবং অসীমে এর মান শূন্য হওয়ায় এটি সর্বোচ্চ মান।</p>",
+        },
+        {
+          id: 5,
+          question: "মহাকর্ষীয় ক্ষেত্র-প্রাবল্যের মাত্রা কোনটি?",
+          options: {
+            a: "MLT⁻²",
+            b: "L²T⁻²",
+            c: "LT⁻¹",
+            d: "LT⁻²",
+          },
+          correct: "d",
+          explanation:
+            "<p>মহাকর্ষীয় ক্ষেত্র-প্রাবল্য (E) হলো মহাকর্ষীয় ক্ষেত্রের কোনো বিন্দুতে একক ভরের বস্তুর উপর প্রযুক্ত বল। এটি অভিকর্ষজ ত্বরণের সমতুল্য।</p><br><p>মহাকর্ষীয় ক্ষেত্র-প্রাবল্য (E) = বল (F) / ভর (m)</p><br><ul><li><b>বলের মাত্রা:</b> বল = ভর &#xD7; ত্বরণ। বলের মাত্রা [M][L][T]<sup>-2</sup>।</li><li><b>ভরের মাত্রা:</b> [M]।</li></ul><br><p>এখন, মহাকর্ষীয় ক্ষেত্র-প্রাবল্যের মাত্রা হবে:</p><br><p>E এর মাত্রা = ([M][L][T]<sup>-2</sup>) / [M]</p><br><p>= [M]<sup>(1-1)</sup>[L][T]<sup>-2</sup></p><br><p>= [M]<sup>0</sup>[L][T]<sup>-2</sup></p><br><p>= [L][T]<sup>-2</sup></p><br><p>সুতরাং, মহাকর্ষীয় ক্ষেত্র-প্রাবল্যের মাত্রা হলো <b>LT⁻²</b>।</p>",
+        },
+        {
+          id: 6,
+          question: "সর্বোচ্চ মহাকর্ষীয় বিভব এর মান কত?",
+          options: {
+            a: "&#x221E;V",
+            b: "6.67 x 10⁻¹¹ V",
+            c: "0V",
+            d: "-1V",
+          },
+          correct: "c",
+          explanation:
+            "<p>মহাকর্ষীয় বিভব (V) এর সূত্র হলো: V = -GM/r।</p><br><p>মহাকর্ষীয় বিভব একটি ঋণাত্মক রাশি, কারণ মহাকর্ষ বল একটি আকর্ষণমূলক বল। এর অর্থ হলো, বস্তুকে মহাকর্ষীয় ক্ষেত্রের মধ্যে আনতে কাজ করতে হয় এবং এই কাজ বিভব শক্তি হিসেবে সঞ্চিত হয় (যা ঋণাত্মক)।</p><br><p>যেহেতু মহাকর্ষীয় বিভব একটি ঋণাত্মক রাশি, এর <b>সর্বোচ্চ মান</b> তখনই হবে যখন এটি শূন্যের সবচেয়ে কাছাকাছি থাকবে।</p><br><p>আমরা জানি যে, অসীম দূরত্বে (r &#x2192; &#x221E;) মহাকর্ষীয় বিভব <b>শূন্য (0V)</b> হয়।</p><br><p>V = -GM / &#x221E; = 0</p><br><p>এটিই মহাকর্ষীয় বিভবের সর্বোচ্চ সম্ভব মান, কারণ এর চেয়ে কম মানগুলো ঋণাত্মক হবে (যেমন, পৃথিবীর পৃষ্ঠে V = -GM/R, যা একটি ঋণাত্মক মান)।</p><br><p>সুতরাং, সর্বোচ্চ মহাকর্ষীয় বিভবের মান <b>0V</b>।</p>",
+        },
+        {
+          id: 7,
+          question: "মহাকর্ষীয় বিভবের একক কী?",
+          options: {
+            a: "volt",
+            b: "J.kg⁻¹",
+            c: "N.kg⁻¹",
+            d: "N.m⁻¹",
+          },
+          correct: "b",
+          explanation:
+            "<p>মহাকর্ষীয় বিভব (V) হলো অসীম থেকে একক ভরের কোনো বস্তুকে মহাকর্ষীয় ক্ষেত্রের কোনো বিন্দুতে আনতে মহাকর্ষীয় বল দ্বারা সম্পন্ন কাজ।</p><br><p>মহাকর্ষীয় বিভব (V) = কৃত কাজ (W) / ভর (m)</p><br><ul><li>কাজের একক হলো জুল (J)।</li><li>ভরের একক হলো কিলোগ্রাম (kg)।</li></ul><br><p>সুতরাং, মহাকর্ষীয় বিভবের একক হবে <b>জুল প্রতি কিলোগ্রাম (J.kg⁻¹)</b>।</p><br><p>অন্যান্য অপশনগুলো হলো:</p><ul><li>(a) volt: এটি বৈদ্যুতিক বিভবের একক।</li><li>(c) N.kg⁻¹: এটি নিউটন প্রতি কিলোগ্রাম, যা মহাকর্ষীয় ক্ষেত্র প্রাবল্য বা অভিকর্ষজ ত্বরণের একক।</li><li>(d) N.m⁻¹: এটি নিউটন প্রতি মিটার, যা স্প্রিং ধ্রুবক বা পৃষ্ঠটানের একক।</li></ul>",
+        },
+        {
+          id: 8,
+          question:
+            "1kg ভরের একটি বস্তুর মহাকর্ষীয় ক্ষেত্র বস্তুটি হতে কত দূরত্ব পর্যন্ত অবস্থিত?",
+          options: {
+            a: "1m",
+            b: "0.1m",
+            c: "6.673 x 10⁻¹¹ m",
+            d: "অসীম",
+          },
+          correct: "d",
+          explanation:
+            "<p>মহাকর্ষ বল (F) হলো: F = Gm<sub>1</sub>m<sub>2</sub> / d<sup>2</sup></p><br><p>এই সূত্র থেকে দেখা যায়, মহাকর্ষ বল দূরত্বের বর্গের ব্যস্তানুপাতিক। এর অর্থ হলো, দূরত্ব যত বাড়তে থাকে, মহাকর্ষ বলের মান তত কমতে থাকে, কিন্তু এটি কখনোই সম্পূর্ণরূপে শূন্য হয় না যতক্ষণ না দূরত্ব <b>অসীম</b> হয়।</p><br><p>সুতরাং, একটি বস্তুর মহাকর্ষীয় ক্ষেত্র <b>অসীম</b> দূরত্ব পর্যন্ত বিস্তৃত। যদিও বাস্তবিকভাবে এটি খুব দুর্বল হয়ে পড়ে এবং সহজে পরিমাপযোগ্য হয় না, কিন্তু গাণিতিকভাবে এর প্রভাব অসীম পর্যন্ত বিদ্যমান।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "M ভরের একটি ফাঁপা গোলকের ব্যাসার্ধ R। কেন্দ্র থেকে r (r &#x3C; R) দূরত্বে কোনো বিন্দুতে মহাকর্ষ বিভব কত?",
+          options: {
+            a: "0",
+            b: "-GM/R",
+            c: "-GM/r",
+            d: "-GM/2R",
+          },
+          correct: "b",
+          explanation:
+            "<p>একটি ফাঁপা গোলকের ক্ষেত্রে, গোলকের অভ্যন্তরের যেকোনো বিন্দুতে মহাকর্ষীয় ক্ষেত্র প্রাবল্য (E) <b>শূন্য</b> হয়। এর কারণ হলো, গোলকের অভ্যন্তরে অবস্থিত যেকোনো বিন্দুর উপর গোলকের সকল অংশের আকর্ষণ বল পরস্পরকে বাতিল করে দেয়।</p><br><p>যেহেতু মহাকর্ষীয় ক্ষেত্র প্রাবল্য শূন্য, এর অর্থ হলো গোলকের অভ্যন্তরে এক বিন্দু থেকে অন্য বিন্দুতে একটি বস্তুকে সরাতে কোনো কাজ করতে হয় না। এর ফলে, গোলকের অভ্যন্তরের প্রতিটি বিন্দুতে মহাকর্ষীয় বিভবের মান <b>স্থির</b> থাকে এবং এটি গোলকের পৃষ্ঠের মহাকর্ষীয় বিভবের সমান হয়।</p><br><p>গোলকের পৃষ্ঠে মহাকর্ষীয় বিভব (V<sub>surface</sub>) এর সূত্র হলো: V<sub>surface</sub> = -GM/R</p><br><p>যেখানে G হলো মহাকর্ষীয় ধ্রুবক, M হলো গোলকের ভর এবং R হলো গোলকের ব্যাসার্ধ।</p><br><p>সুতরাং, M ভরের একটি ফাঁপা গোলকের কেন্দ্র থেকে r (r &#x3C; R) দূরত্বে কোনো বিন্দুতে মহাকর্ষ বিভব হবে <b>-GM/R</b>।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "মহাকর্ষীয় বিভব ও বিভব শক্তি এর সর্বোচ্চ মান শূন্য হয় কোথায়?",
+          options: {
+            a: "অসীমে",
+            b: "কেন্দ্রে",
+            c: "ভরকেন্দ্রে",
+            d: "বায়ুমণ্ডলে",
+          },
+          correct: "a",
+          explanation:
+            "<p>মহাকর্ষীয় বিভব (V) এবং মহাকর্ষীয় বিভব শক্তি (U) উভয়ই ঋণাত্মক রাশি (U = mV)। এদের মান অসীম দূরত্বে <b>শূন্য</b> ধরা হয়।</p><ul><li><b>মহাকর্ষীয় বিভব:</b> V = -GM/r। যখন r &#x2192; &#x221E;, তখন V = 0।</li><li><b>মহাকর্ষীয় বিভব শক্তি:</b> U = -GMm/r। যখন r &#x2192; &#x221E;, তখন U = 0।</li></ul><p>যেহেতু মহাকর্ষীয় বিভব এবং বিভব শক্তি আকর্ষণমূলক প্রকৃতির কারণে ঋণাত্মক হয়, তাই শূন্য (-0) হলো তাদের <b>সর্বোচ্চ</b> সম্ভাব্য মান। এর থেকে কাছাকাছি যেকোনো দূরত্বে (যেমন পৃথিবীর পৃষ্ঠে বা কেন্দ্রে) তাদের মান আরও বেশি ঋণাত্মক হবে, অর্থাৎ কম হবে।</p><br><p>সুতরাং, মহাকর্ষীয় বিভব ও বিভব শক্তি এর সর্বোচ্চ মান শূন্য হয় <b>অসীমে</b>।</p>",
+        },
+        {
+          id: 11,
+          question: "চাঁদে মুক্তি বেগ কত?",
+          options: {
+            a: "11.2 km/sec",
+            b: "2.4 km/sec",
+            c: "4.3 km/sec",
+            d: "5 km/sec",
+          },
+          correct: "b",
+          explanation:
+            "<p>মুক্তি বেগ (Escape Velocity) হলো সেই সর্বনিম্ন বেগ যা দিয়ে কোনো বস্তুকে একটি মহাকাশীয় বস্তুর মহাকর্ষীয় আকর্ষণ থেকে সম্পূর্ণরূপে মুক্ত করে অসীমে পাঠাতে হয়। মুক্তি বেগের সূত্র হলো:</p><br><p>v<sub>e</sub> = &#x221A;(2GM/R) অথবা v<sub>e</sub> = &#x221A;(2gR)</p><br><p>যেখানে G = মহাকর্ষীয় ধ্রুবক, M = গ্রহ বা উপগ্রহের ভর, R = গ্রহ বা উপগ্রহের ব্যাসার্ধ, এবং g = সেই পৃষ্ঠে অভিকর্ষজ ত্বরণ।</p><br><p>পৃথিবীর মুক্তি বেগ প্রায় 11.2 km/s।</p><br><p>চাঁদের ক্ষেত্রে, এর ভর ও ব্যাসার্ধ পৃথিবীর তুলনায় অনেক কম। চাঁদের পৃষ্ঠে অভিকর্ষজ ত্বরণ (g<sub>M</sub>) প্রায় 1.62 m/s<sup>2</sup> এবং চাঁদের ব্যাসার্ধ (R<sub>M</sub>) প্রায় 1737 km (1.737 &#xD7; 10<sup>6</sup> m)।</p><br><p>v<sub>e,moon</sub> = &#x221A;(2 &#xD7; 1.62 m/s<sup>2</sup> &#xD7; 1.737 &#xD7; 10<sup>6</sup> m)</p><br><p>v<sub>e,moon</sub> &#x2248; &#x221A;(5.626 &#xD7; 10<sup>6</sup>) m/s</p><br><p>v<sub>e,moon</sub> &#x2248; 2372 m/s &#x2248; 2.37 km/s</p><br><p>সুতরাং, চাঁদে মুক্তি বেগ প্রায় <b>2.4 km/sec</b>।</p>",
+        },
+        {
+          id: 12,
+          question:
+            "কোন বস্তুকে যেভাবেই রাখা হোক না কেন তার ওজন একটি বিন্দুর মধ্য দিয়ে বস্তুর উপর সর্বদা ক্রিয়া এ। এই বিন্দুকে বলে-",
+          options: {
+            a: "অভিকেন্দ্র",
+            b: "ভারকেন্দ্র",
+            c: "মহাকর্ষীয় ধ্রুবক",
+            d: "অভিকর্ষজ ত্বরণ",
+          },
+          correct: "b",
+          explanation:
+            "<p>কোনো বস্তুর ওজন হলো সেই মহাকর্ষ বল যা বস্তুর উপর ক্রিয়া করে। বস্তুর প্রতিটি কণার উপর মহাকর্ষ বল ক্রিয়া করে, এবং এই সকল বলের লব্ধি একটি নির্দিষ্ট বিন্দুর মধ্য দিয়ে কাজ করে। এই বিন্দুটিকে <b>ভারকেন্দ্র (Centre of Gravity)</b> বলা হয়।</p><br><ul><li><b>ভারকেন্দ্র:</b> এটি এমন একটি বিন্দু যেখানে বস্তুর সমস্ত ওজন কেন্দ্রীভূত আছে বলে মনে হয়। বস্তুকে যে অবস্থানেই রাখা হোক না কেন, তার ওজন সর্বদা এই বিন্দুর মধ্য দিয়ে উল্লম্বভাবে নিচের দিকে ক্রিয়া করে।</li><li><b>ভরকেন্দ্র (Centre of Mass):</b> এটি বস্তুর মোট ভরের গড় অবস্থান। সুষম বস্তুর ক্ষেত্রে ভরকেন্দ্র ও ভারকেন্দ্র একই হয়। কিন্তু অসম অভিকর্ষজ ত্বরণযুক্ত ক্ষেত্রে (যেমন, একটি বিশাল বস্তুর বিভিন্ন অংশে g এর মান ভিন্ন হলে) ভারকেন্দ্র ও ভরকেন্দ্র ভিন্ন হতে পারে।</li><li><b>অভিকেন্দ্র:</b> এটি একটি বিন্দুর চারপাশে একটি বস্তুর ঘূর্ণনের কেন্দ্র।</li><li><b>মহাকর্ষীয় ধ্রুবক:</b> মহাকর্ষ সূত্রের একটি ধ্রুবক।</li><li><b>অভিকর্ষজ ত্বরণ:</b> মহাকর্ষ বলের কারণে সৃষ্ট ত্বরণ।</li></ul><p>সুতরাং, সঠিক উত্তর হলো <b>ভারকেন্দ্র</b>।</p>",
+        },
+        {
+          id: 13,
+          question: "পৃথিবীতে মুক্তিবেগের মান কত?",
+          options: {
+            a: "11.2 ms⁻¹",
+            b: "1120 ms⁻¹",
+            c: "11.2 kms⁻¹",
+            d: "112 kms⁻¹",
+          },
+          correct: "c",
+          explanation:
+            "<p>পৃথিবীতে মুক্তি বেগ (Escape Velocity) হলো সেই সর্বনিম্ন বেগ যা দিয়ে কোনো বস্তুকে পৃথিবীর মহাকর্ষীয় আকর্ষণ থেকে সম্পূর্ণরূপে মুক্ত করে অসীমে পাঠাতে হয়।</p><br><p>মুক্তি বেগের সূত্র হলো: v<sub>e</sub> = &#x221A;(2gR)</p><br><p>যেখানে:</p><ul><li>g = পৃথিবীর পৃষ্ঠে অভিকর্ষজ ত্বরণ &#x2248; 9.8 m/s<sup>2</sup></li><li>R = পৃথিবীর ব্যাসার্ধ &#x2248; 6.4 &#xD7; 10<sup>6</sup> m (6400 km)</li></ul><br><p>v<sub>e</sub> = &#x221A;(2 &#xD7; 9.8 m/s<sup>2</sup> &#xD7; 6.4 &#xD7; 10<sup>6</sup> m)</p><br><p>v<sub>e</sub> = &#x221A;(125.44 &#xD7; 10<sup>6</sup>) m/s</p><br><p>v<sub>e</sub> &#x2248; 11200 m/s</p><br><p>v<sub>e</sub> &#x2248; 11.2 &#xD7; 10<sup>3</sup> m/s</p><br><p>v<sub>e</sub> &#x2248; 11.2 km/s</p><br><p>সুতরাং, পৃথিবীতে মুক্তিবেগের মান প্রায় <b>11.2 kms⁻¹</b>।</p>",
+        },
+        {
+          id: 14,
+          question: "কোনো বস্তুর মুক্তিবেগ ওই বস্তুর ঘনত্বের-",
+          options: {
+            a: "বর্গের সমানুপাতিক",
+            b: "সমানুপাতিক",
+            c: "ব্যস্তানুপাতিক",
+            d: "উপর নির্ভরশীল নয়",
+          },
+          correct: "d",
+          explanation:
+            "<p>মুক্তি বেগের সূত্র হলো: v<sub>e</sub> = &#x221A;(2GM/R)</p><br><p>যেখানে:</p><ul><li>G = মহাকর্ষীয় ধ্রুবক</li><li>M = গ্রহ বা মহাকাশীয় বস্তুর ভর (বস্তুর নয়)</li><li>R = গ্রহ বা মহাকাশীয় বস্তুর ব্যাসার্ধ (বস্তুর নয়)</li></ul><br><p>এই সূত্রে, বস্তুর (যেটিকে নিক্ষেপ করা হচ্ছে) ভর বা ঘনত্ব উল্লেখ নেই। মুক্তি বেগ নির্ভর করে শুধুমাত্র সেই গ্রহ বা মহাকাশীয় বস্তুর ভর ও ব্যাসার্ধের উপর যেখান থেকে বস্তুটি নিক্ষেপ করা হচ্ছে। এটি নিক্ষেপ করা বস্তুর ভর, আকৃতি বা ঘনত্বের উপর নির্ভর করে না।</p><br><p>সুতরাং, কোনো বস্তুর মুক্তিবেগ ওই বস্তুর ঘনত্বের <b>উপর নির্ভরশীল নয়</b>।</p>",
+        },
+        {
+          id: 15,
+          question: "মুক্তিবেগের রাশিমালায় কোনটি অনুপস্থিত?",
+          options: {
+            a: "গ্রহের ব্যাসার্ধ",
+            b: "অভিকর্ষজ ত্বরণ",
+            c: "গ্রহের ভর",
+            d: "বস্তুর ঘনত্ব",
+          },
+          correct: "d",
+          explanation:
+            "<p>মুক্তি বেগের সূত্রটি হলো: v<sub>e</sub> = &#x221A;(2GM/R) অথবা v<sub>e</sub> = &#x221A;(2gR)</p><br><ul><li><b>গ্রহের ব্যাসার্ধ (R):</b> উভয় সূত্রেই 'R' (গ্রহের ব্যাসার্ধ) উপস্থিত।</li><li><b>অভিকর্ষজ ত্বরণ (g):</b> দ্বিতীয় সূত্রে 'g' (গ্রহের পৃষ্ঠে অভিকর্ষজ ত্বরণ) উপস্থিত।</li><li><b>গ্রহের ভর (M):</b> প্রথম সূত্রে 'M' (গ্রহের ভর) উপস্থিত।</li></ul><br><p>তবে, মুক্তি বেগের রাশিমালায় <b>বস্তুর ঘনত্ব</b> (বা বস্তুর ভর) অনুপস্থিত। মুক্তি বেগ বস্তুর ভর বা ঘনত্বের উপর নির্ভর করে না, এটি শুধুমাত্র সেই গ্রহ বা মহাকাশীয় বস্তুর ভর ও ব্যাসার্ধের উপর নির্ভর করে যেখান থেকে বস্তুটি নিক্ষেপ করা হচ্ছে।</p>",
+        },
+        {
+          id: 16,
+          question: "মুক্তিবেগের সমীকরণ হচ্ছে-",
+          options: {
+            a: "v<sub>e</sub> = &#x221A;gR",
+            b: "v<sub>e</sub> = &#x221A;2gR",
+            c: "v<sub>e</sub> = gR",
+            d: "v<sub>e</sub> = &#x221A;2/gR",
+          },
+          correct: "b",
+          explanation:
+            "<p>মুক্তি বেগের সমীকরণ হলো:</p><br><p><b>v<sub>e</sub> = &#x221A;(2gR)</b></p><br><p>অথবা, যদি গ্রহের ভর (M) ব্যবহার করা হয়, তবে:</p><br><p>v<sub>e</sub> = &#x221A;(2GM/R)</p><br><p>যেখানে:</p><ul><li>v<sub>e</sub> = মুক্তি বেগ</li><li>g = গ্রহের পৃষ্ঠে অভিকর্ষজ ত্বরণ</li><li>R = গ্রহের ব্যাসার্ধ</li><li>G = মহাকর্ষীয় ধ্রুবক</li><li>M = গ্রহের ভর</li></ul><br><p>এই সূত্রটি থেকে বোঝা যায় যে, মুক্তি বেগ গ্রহের অভিকর্ষজ ত্বরণ এবং ব্যাসার্ধের গুণফলের বর্গমূলের সমানুপাতিক।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "কোনো বস্তুকে মুক্তিবেগ v₁-এর কতগুণ বেগে নিক্ষেপ করলে কৃত্রিম উপগ্রহে পরিণত হবে?",
+          options: {
+            a: "v₁",
+            b: "&#x221A;2 v₁",
+            c: "v₁/&#x221A;2",
+            d: "2v₁",
+          },
+          correct: "c",
+          explanation:
+            "<p>একটি বস্তুকে কৃত্রিম উপগ্রহে পরিণত করার জন্য নির্দিষ্ট কক্ষপথে স্থাপন করতে হয়। এর জন্য প্রয়োজনীয় বেগ হলো কক্ষীয় বেগ (Orbital Velocity), যা মুক্তি বেগের (v<sub>e</sub>) সাথে সম্পর্কিত।</p><br><p>কক্ষীয় বেগের সূত্র (v<sub>o</sub>) হলো: v<sub>o</sub> = &#x221A;(GM/R)</p><br><p>মুক্তি বেগের সূত্র (v<sub>e</sub>) হলো: v<sub>e</sub> = &#x221A;(2GM/R)</p><br><p>এই দুটি সূত্র তুলনা করলে দেখা যায়:</p><br><p>v<sub>e</sub> = &#x221A;2 &#xD7; &#x221A;(GM/R)</p><br><p>v<sub>e</sub> = &#x221A;2 &#xD7; v<sub>o</sub></p><br><p>সুতরাং, v<sub>o</sub> = v<sub>e</sub> / &#x221A;2</p><br><p>অর্থাৎ, কোনো বস্তুকে মুক্তিবেগ v<sub>e</sub>-এর <b>1/&#x221A;2 গুণ</b> বেগে (বা প্রায় 0.707 গুণ বেগে) নিক্ষেপ করলে তা কৃত্রিম উপগ্রহে পরিণত হবে। এটি হলো সর্বনিম্ন বেগ যা একটি বস্তুকে পৃথিবীর চারপাশে একটি বৃত্তাকার কক্ষপথে স্থাপন করার জন্য প্রয়োজন।</p>",
+        },
+        {
+          id: 18,
+          question: "পৃথিবীতে কোনো বস্তুর মুক্তিবেগ নির্ভর করে-",
+          options: {
+            a: "বস্তুর ভরের ওপর",
+            b: "পৃথিবীর ব্যাসার্ধের ওপর",
+            c: "বস্তুর ব্যাসার্ধের ওপর",
+            d: "পৃথিবীপৃষ্ঠ ও বস্তুর দূরত্বের ওপর",
+          },
+          correct: "b",
+          explanation:
+            "<p>মুক্তিবেগের সূত্র হলো: v<sub>e</sub> = &#x221A;(2GM/R)</p><br><p>অথবা, v<sub>e</sub> = &#x221A;(2gR)</p><br><p>যেখানে:</p><ul><li>G = মহাকর্ষীয় ধ্রুবক (ধ্রুবক)</li><li>M = যে গ্রহ থেকে বস্তুকে নিক্ষেপ করা হচ্ছে তার ভর (এখানে পৃথিবীর ভর)</li><li>R = যে গ্রহ থেকে বস্তুকে নিক্ষেপ করা হচ্ছে তার ব্যাসার্ধ (এখানে পৃথিবীর ব্যাসার্ধ)</li><li>g = যে গ্রহের পৃষ্ঠে অভিকর্ষজ ত্বরণ (এখানে পৃথিবীর অভিকর্ষজ ত্বরণ)</li></ul><br><p>এই সূত্র থেকে স্পষ্ট যে, মুক্তিবেগ <b>গ্রহের ভর (M)</b> এবং <b>গ্রহের ব্যাসার্ধ (R)</b> এর উপর নির্ভর করে। অর্থাৎ, পৃথিবীর ক্ষেত্রে, মুক্তিবেগ <b>পৃথিবীর ভর</b> এবং <b>পৃথিবীর ব্যাসার্ধের ওপর</b> নির্ভর করে।</p><br><p>বস্তুর ভর (যেটিকে নিক্ষেপ করা হচ্ছে), বস্তুর ব্যাসার্ধ বা পৃথিবীর পৃষ্ঠ থেকে বস্তুর দূরত্ব (যে উচ্চতা থেকে নিক্ষেপ করা হচ্ছে, যদি না সেটি পৃষ্ঠ থেকে অনেক উপরে হয়) এর উপর মুক্তিবেগ নির্ভর করে না।</p><br><p>সুতরাং, পৃথিবীতে কোনো বস্তুর মুক্তিবেগ নির্ভর করে <b>পৃথিবীর ব্যাসার্ধের ওপর</b>।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "সর্বনিম্ন কত বেগে ভূ-পৃষ্ঠ হতে m ভরের একটি বস্তুকে উপরের দিকে নিক্ষেপ করলে তা আর কখনো ফিরে আসবে না?",
+          options: {
+            a: "2gR",
+            b: "&#x221A;2gR",
+            c: "gR",
+            d: "2/gR",
+          },
+          correct: "b",
+          explanation:
+            "<p>কোনো বস্তুকে ভূ-পৃষ্ঠ থেকে নিক্ষেপ করলে যদি তা আর কখনো পৃথিবীর মহাকর্ষীয় আকর্ষণ ক্ষেত্রে ফিরে না আসে, তাহলে সেই বেগকে <b>মুক্তি বেগ (Escape Velocity)</b> বলে।</p><br><p>মুক্তি বেগের সূত্রটি হলো:</p><br><p><b>v<sub>e</sub> = &#x221A;(2gR)</b></p><br><p>যেখানে:</p><ul><li>g = পৃথিবীর পৃষ্ঠে অভিকর্ষজ ত্বরণ</li><li>R = পৃথিবীর ব্যাসার্ধ</li></ul><br><p>এই সূত্রটি বস্তুর ভরের (m) উপর নির্ভরশীল নয়, অর্থাৎ যেকোনো ভরের বস্তুর জন্যই মুক্তি বেগের মান একই হবে। পৃথিবীর জন্য এই মান প্রায় 11.2 km/s।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "পৃথিবীর অভিকর্ষজ ত্বরণ 980 cms⁻² এবং একটি বস্তুর মুক্তিবেগ 11.2 km s⁻¹। পৃথিবীর ব্যাসার্ধ কত?",
+          options: {
+            a: "6400 km",
+            b: "640 km",
+            c: "64000 km",
+            d: "কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমরা জানি, মুক্তিবেগের সূত্র হলো:</p><br><p>v<sub>e</sub> = &#x221A;(2gR)</p><br><p>যেখানে:</p><ul><li>v<sub>e</sub> = মুক্তিবেগ</li><li>g = অভিকর্ষজ ত্বরণ</li><li>R = পৃথিবীর ব্যাসার্ধ</li></ul><br><p>প্রদত্ত মানগুলো:</p><ul><li>v<sub>e</sub> = 11.2 km/s = 11.2 &#xD7; 1000 m/s = 11200 m/s</li><li>g = 980 cm/s<sup>2</sup> = 980 / 100 m/s<sup>2</sup> = 9.8 m/s<sup>2</sup></li></ul><br><p>এখন, সূত্রটিকে R এর জন্য সমাধান করি:</p><br><p>v<sub>e</sub><sup>2</sup> = 2gR</p><br><p>R = v<sub>e</sub><sup>2</sup> / (2g)</p><br><p>মান বসিয়ে পাই:</p><br><p>R = (11200 m/s)<sup>2</sup> / (2 &#xD7; 9.8 m/s<sup>2</sup>)</p><br><p>R = 125440000 m<sup>2</sup>/s<sup>2</sup> / 19.6 m/s<sup>2</sup></p><br><p>R = 6400000 m</p><br><p>R = 6400 &#xD7; 1000 m</p><br><p>R = 6400 km</p><br><p>সুতরাং, পৃথিবীর ব্যাসার্ধ <b>6400 km</b>।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "একটি গ্রহের ব্যাসার্ধ পৃথিবীর ব্যাসার্ধের দ্বিগুণ। উক্ত গ্রহের অভিকর্ষজ ত্বরণ পৃথিবীর অভিকর্ষজ ত্বরণের আটগুণ। উক্ত গ্রহের মুক্তিবেগ পৃথিবীর মুক্তিবেগের তুলনায় কতগুণ তা নির্ণয় কর।",
+          options: {
+            a: "2 গুণ",
+            b: "4 গুণ",
+            c: "8 গুণ",
+            d: "16 গুণ",
+          },
+          correct: "b",
+          explanation:
+            "<p>মুক্তিবেগের সূত্র হলো: v<sub>e</sub> = &#x221A;(2gR)</p><br><p>ধরি, পৃথিবীর ব্যাসার্ধ R<sub>E</sub> এবং অভিকর্ষজ ত্বরণ g<sub>E</sub>। তাহলে পৃথিবীর মুক্তিবেগ হবে:</p><br><p>v<sub>eE</sub> = &#x221A;(2g<sub>E</sub>R<sub>E</sub>)</p><br><p>প্রশ্নে দেওয়া আছে, নতুন গ্রহের ব্যাসার্ধ পৃথিবীর ব্যাসার্ধের দ্বিগুণ (R<sub>P</sub> = 2R<sub>E</sub>) এবং উক্ত গ্রহের অভিকর্ষজ ত্বরণ পৃথিবীর অভিকর্ষজ ত্বরণের আটগুণ (g<sub>P</sub> = 8g<sub>E</sub>)।</p><br><p>তাহলে ঐ গ্রহের মুক্তিবেগ (v<sub>eP</sub>) হবে:</p><br><p>v<sub>eP</sub> = &#x221A;(2g<sub>P</sub>R<sub>P</sub>)</p><br><p>v<sub>eP</sub> = &#x221A;[2 &#xD7; (8g<sub>E</sub>) &#xD7; (2R<sub>E</sub>)]</p><br><p>v<sub>eP</sub> = &#x221A;[32 &#xD7; g<sub>E</sub>R<sub>E</sub>]</p><br><p>v<sub>eP</sub> = &#x221A;16 &#xD7; &#x221A;(2g<sub>E</sub>R<sub>E</sub>)</p><br><p>v<sub>eP</sub> = 4 &#xD7; v<sub>eE</sub></p><br><p>সুতরাং, উক্ত গ্রহের মুক্তিবেগ পৃথিবীর মুক্তিবেগের তুলনায় <b>4 গুণ</b>।</p>",
+        },
+        {
+          id: 22,
+          question:
+            "একটি বস্তুকে সোজা উপরের দিকে v বেগে নিক্ষেপ করলে বস্তুটি পৃথিবীর আকর্ষণ হতে মুক্তি পায়। যদি বস্তুটিকে আনুভূমিকের সাথে 45&#xB0; কোণে নিক্ষেপ করা হয়, তবে মুক্তিবেগ হবে-",
+          options: {
+            a: "2v",
+            b: "&#x221A;2v",
+            c: "v",
+            d: "v/&#x221A;2",
+          },
+          correct: "c",
+          explanation:
+            "<p><b>মুক্তিবেগ (Escape Velocity)</b> হলো সেই সর্বনিম্ন বেগ যা দিয়ে কোনো বস্তুকে একটি মহাকাশীয় বস্তুর মহাকর্ষীয় আকর্ষণ থেকে সম্পূর্ণরূপে মুক্ত করতে হয়। এটি একটি স্কেলার রাশি, অর্থাৎ এর মান কোনো নির্দিষ্ট দিকনির্দেশনার উপর নির্ভরশীল নয়।</p><br><p>মুক্তিবেগ নির্ভর করে শুধুমাত্র যে গ্রহ বা মহাকাশীয় বস্তু থেকে বস্তুকে নিক্ষেপ করা হচ্ছে তার ভর এবং ব্যাসার্ধের উপর। এটি বস্তুর ভরের উপর বা নিক্ষেপের দিকের উপর নির্ভর করে না।</p><br><p>প্রশ্নে উল্লেখ করা হয়েছে যে, বস্তুকে সোজা উপরের দিকে (উলম্বভাবে) v বেগে নিক্ষেপ করলে বস্তুটি পৃথিবীর আকর্ষণ হতে মুক্তি পায়। এই v বেগটিই হলো মুক্তিবেগ।</p><br><p>যদি একই বস্তুকে আনুভূমিকের সাথে 45&#xB0; কোণে বা অন্য যেকোনো কোণে নিক্ষেপ করা হয়, তাহলেও মুক্তি পাওয়ার জন্য একই পরিমাণ শক্তির প্রয়োজন হবে, যা একই মুক্তি বেগের সমান। যেহেতু মুক্তিবেগ দিক-নিরপেক্ষ, তাই এটি নিক্ষেপের কোণের উপর নির্ভর করে না।</p><br><p>সুতরাং, যদি বস্তুটিকে আনুভূমিকের সাথে 45&#xB0; কোণে নিক্ষেপ করা হয়, তবে মুক্তিবেগ হবে <b>v</b>।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "1 kg ভরের কোন প্রাসের ভূপৃষ্ঠে মুক্তিবেগ প্রায় 11 km/s হলে 2 kg ভরের জন্য ঐ একই স্থানে মুক্তিবেগ হবে-",
+          options: {
+            a: "5.5 km/s",
+            b: "7.1 km/s",
+            c: "10 km/s",
+            d: "11 km/s",
+          },
+          correct: "d",
+          explanation:
+            "<p>মুক্তিবেগের সূত্র হলো: v<sub>e</sub> = &#x221A;(2GM/R)</p><br><p>অথবা, v<sub>e</sub> = &#x221A;(2gR)</p><br><p>এই সূত্রগুলো থেকে স্পষ্ট দেখা যায় যে, মুক্তিবেগের মান সেই <b>গ্রহ বা মহাকাশীয় বস্তুর ভর (M) এবং ব্যাসার্ধ (R)</b> এর উপর নির্ভর করে যেখান থেকে বস্তুটি নিক্ষেপ করা হচ্ছে। এটি <b>নিক্ষিপ্ত বস্তুর ভর</b> (যেমন 1 kg বা 2 kg) এর উপর নির্ভর করে না।</p><br><p>অর্থাৎ, 1 kg ভরের বস্তুর জন্য ভূপৃষ্ঠে যা মুক্তিবেগ, 2 kg ভরের বস্তুর জন্যও ঐ একই স্থানে একই মুক্তিবেগ হবে।</p><br><p>পৃথিবীর পৃষ্ঠে মুক্তিবেগ প্রায় 11.2 km/s। প্রশ্নে দেওয়া 11 km/s এই মানেরই একটি অনুমান।</p><br><p>সুতরাং, 2 kg ভরের জন্য ঐ একই স্থানে মুক্তিবেগ হবে <b>11 km/s</b>।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "কোন বস্তুকে পৃথিবী পৃষ্ঠের R উচ্চতা হতে ছেড়ে দিলে পৃথিবী পৃষ্ঠে পৌঁছানোর পূর্ব মুহূর্তে বস্তুটির দ্রুতি হবে-",
+          options: {
+            a: "&#x221A;(GM/R)",
+            b: "&#x221A;(GM/2R)",
+            c: "&#x221A;(2GM/R)",
+            d: "&#x221A;(GM/R²)",
+          },
+          correct: "c",
+          explanation:
+            "<p>এটি শক্তি সংরক্ষণ নীতি (Conservation of Energy) ব্যবহার করে সমাধান করা যেতে পারে।</p><br><p>ধরি, বস্তুর ভর m।</p><br><ul><li><b>প্রাথমিক অবস্থা (h = R উচ্চতায়):</b></li><li>মোট শক্তি (E<sub>initial</sub>) = গতিশক্তি (KE) + স্থিতিশক্তি (PE)</li><li>প্রাথমিক গতিশক্তি (KE<sub>initial</sub>) = 0 (কারণ বস্তুটিকে ছেড়ে দেওয়া হয়েছে, আদি বেগ শূন্য)</li><li>প্রাথমিক স্থিতিশক্তি (PE<sub>initial</sub>) = -GMm / (R+h) = -GMm / (R+R) = -GMm / (2R)</li><li>সুতরাং, E<sub>initial</sub> = -GMm / (2R)</li></ul><br><ul><li><b>চূড়ান্ত অবস্থা (পৃথিবী পৃষ্ঠে পৌঁছানোর পূর্ব মুহূর্তে):</b></li><li>মোট শক্তি (E<sub>final</sub>) = গতিশক্তি (KE) + স্থিতিশক্তি (PE)</li><li>চূড়ান্ত গতিশক্তি (KE<sub>final</sub>) = (1/2)mv<sup>2</sup> (যেখানে v হলো পৃথিবী পৃষ্ঠে পৌঁছানোর পূর্ব মুহূর্তের দ্রুতি)</li><li>চূড়ান্ত স্থিতিশক্তি (PE<sub>final</sub>) = -GMm / R</li><li>সুতরাং, E<sub>final</sub> = (1/2)mv<sup>2</sup> - GMm / R</li></ul><br><p>শক্তি সংরক্ষণ নীতি অনুযায়ী, E<sub>initial</sub> = E<sub>final</sub>:</p><br><p>-GMm / (2R) = (1/2)mv<sup>2</sup> - GMm / R</p><br><p>উভয় পক্ষকে m দ্বারা ভাগ করে:</p><br><p>-GM / (2R) = (1/2)v<sup>2</sup> - GM / R</p><br><p>(1/2)v<sup>2</sup> = GM / R - GM / (2R)</p><br><p>(1/2)v<sup>2</sup> = (2GM - GM) / (2R)</p><br><p>(1/2)v<sup>2</sup> = GM / (2R)</p><br><p>v<sup>2</sup> = 2GM / (2R)</p><br><p>v<sup>2</sup> = GM / R</p><br><p>v = &#x221A;(GM/R)</p><br><p>কিন্তু প্রশ্নে বিকল্প C তে &#x221A;(2GM/R) আছে, যা মুক্তিবেগের সমান। একটি বস্তুকে R উচ্চতা থেকে ছেড়ে দিলে তার ভূপৃষ্ঠে আঘাত করার মুহূর্তে যে দ্রুতি হয়, তা মুক্তিবেগের দ্রুতি নয়। মুক্তিবেগের দ্রুতি (&#x221A;2GM/R) হয় যখন বস্তুকে অসীম থেকে R দূরত্বে আনা হয়।</p><br><p>আসলে, এখানে একটি ভুল আছে। শক্তি সংরক্ষণের সঠিক প্রয়োগে:</p><br><p>E<sub>initial</sub> = -GMm / (R+R) = -GMm / (2R)</p><br><p>E<sub>final</sub> = (1/2)mv<sup>2</sup> - GMm / R</p><br><p>E<sub>initial</sub> = E<sub>final</sub></p><br><p>-GMm / (2R) = (1/2)mv<sup>2</sup> - GMm / R</p><br><p>(1/2)mv<sup>2</sup> = GMm / R - GMm / (2R)</p><br><p>(1/2)mv<sup>2</sup> = GMm / (2R)</p><br><p>v<sup>2</sup> = GM / R</p><br><p>v = &#x221A;(GM/R)</p><br><p>এই উত্তরটি বিকল্প (a) এর সাথে মিলে যায়। তবে, যদি প্রশ্নটি মুক্তিবেগকে নির্দেশ করে, তবে উত্তর C হতে পারে। প্রশ্নটি 'দ্রুতি' জানতে চেয়েছে, মুক্তিবেগ নয়। প্রশ্নটি 'পৃথিবী পৃষ্ঠে পৌঁছানোর পূর্ব মুহূর্তে' উল্লেখ করেছে, যা মুক্তিবেগ নয়।</p><br><p>যদি পৃথিবীর ব্যাসার্ধের R উচ্চতা থেকে বস্তুটিকে ছেড়ে দেওয়া হয়, তাহলে তার গতিশক্তি হবে স্থিতিশক্তির পার্থক্য থেকে।</p><br><p>স্থিতিশক্তির পরিবর্তন = PE<sub>initial</sub> - PE<sub>final</sub></p><br><p>= [-GMm/(R+R)] - [-GMm/R]</p><br><p>= [-GMm/(2R)] + [GMm/R]</p><br><p>= GMm/R - GMm/(2R)</p><br><p>= (2GMm - GMm) / (2R)</p><br><p>= GMm / (2R)</p><br><p>এই স্থিতিশক্তির পরিবর্তনই গতিশক্তিতে রূপান্তরিত হবে:</p><br><p>(1/2)mv<sup>2</sup> = GMm / (2R)</p><br><p>v<sup>2</sup> = GM / R</p><br><p>v = &#x221A;(GM/R)</p><br><p>প্রশ্নে দেওয়া উত্তর (c) &#x221A;(2GM/R) মুক্তিবেগের সূত্র, যা অসীম থেকে আগত বস্তুর জন্য। কিন্তু এখানে বস্তুটিকে R উচ্চতা থেকে ছেড়ে দেওয়া হয়েছে। এই ক্ষেত্রে সঠিক উত্তর হওয়া উচিত &#x221A;(GM/R) (অপশন a)। প্রদত্ত উত্তর (c) ভুল।</p>",
+        },
+        {
+          id: 25,
+          question: "যে বিন্দু দিয়ে বস্তুর ওজন ক্রিয়া করে তাকে কী বলে?",
+          options: {
+            a: "ওজনবিন্দু",
+            b: "ভারকেন্দ্র",
+            c: "ভরকেন্দ্র",
+            d: "ক্রিয়াকেন্দ্র",
+          },
+          correct: "b",
+          explanation:
+            "<p>কোনো বস্তুর <b>ওজন</b> হলো পৃথিবীর মহাকর্ষ বল যা বস্তুর প্রতিটি কণার উপর ক্রিয়া করে। এই সকল ক্ষুদ্র ক্ষুদ্র বলের লব্ধি একটি নির্দিষ্ট বিন্দুর মধ্য দিয়ে ক্রিয়া করে, সেই বিন্দুটিকে বস্তুর <b>ভারকেন্দ্র (Centre of Gravity)</b> বলে।</p><br><ul><li><b>ভারকেন্দ্র:</b> এটি এমন একটি বিন্দু যেখানে বস্তুর সমস্ত ওজন কেন্দ্রীভূত আছে বলে মনে হয়। বস্তুকে যেভাবেই রাখা হোক না কেন, তার ওজন সর্বদা এই বিন্দুর মধ্য দিয়ে উল্লম্বভাবে নিচের দিকে ক্রিয়া করে।</li><li><b>ভরকেন্দ্র (Centre of Mass):</b> এটি বস্তুর মোট ভরের গড় অবস্থান। সুষম বস্তুর ক্ষেত্রে ভরকেন্দ্র ও ভারকেন্দ্র একই হয়।</li><li><b>ওজনবিন্দু:</b> এটি একটি সাধারণ শব্দ, কিন্তু পদার্থবিজ্ঞানের নির্দিষ্ট পরিভাষা নয়।</li><li><b>ক্রিয়াকেন্দ্র:</b> এটিও একটি সাধারণ শব্দ, কিন্তু সুনির্দিষ্ট বৈজ্ঞানিক পরিভাষা নয়।</li></ul><p>সুতরাং, সঠিক উত্তর হলো <b>ভারকেন্দ্র</b>।</p>",
+        },
+        {
+          id: 26,
+          question: "একটি ভূ-স্থির উপগ্রহের আবর্তনকাল কত?",
+          options: {
+            a: "12 ঘণ্টা",
+            b: "24 ঘণ্টা",
+            c: "1 মাস",
+            d: "12 মাস",
+          },
+          correct: "b",
+          explanation:
+            "<p>একটি <b>ভূ-স্থির উপগ্রহ (Geostationary Satellite)</b> হলো এমন একটি কৃত্রিম উপগ্রহ যা পৃথিবী থেকে দেখলে আকাশে একটি নির্দিষ্ট স্থানে স্থির আছে বলে মনে হয়। এটি সম্ভব হয় যদি উপগ্রহটি নিম্নলিখিত শর্তগুলো পূরণ করে:</p><ul><li>এটি বিষুবরেখার উপর দিয়ে একটি বৃত্তাকার কক্ষপথে আবর্তন করে।</li><li>এর আবর্তনকাল পৃথিবীর আহ্নিক গতির আবর্তনকালের সমান হয়।</li><li>এটি পৃথিবীর ঘূর্ণনের একই দিকে (পশ্চিম থেকে পূর্ব) ঘোরে।</li></ul><p>পৃথিবীর আহ্নিক গতির আবর্তনকাল হলো <b>24 ঘণ্টা</b>। সুতরাং, একটি ভূ-স্থির উপগ্রহের আবর্তনকালও <b>24 ঘণ্টা</b> হবে। এই কারণে এটি পৃথিবী সাপেক্ষে স্থির মনে হয়, যা যোগাযোগ, আবহাওয়া পর্যবেক্ষণ এবং সম্প্রচারের জন্য অত্যন্ত গুরুত্বপূর্ণ।</p>",
+        },
+        {
+          id: 27,
+          question: "ভূ-স্থির উপগ্রহের কক্ষপথ সম্পর্কে নিচের কোনটি সঠিক নয়?",
+          options: {
+            a: "ভূ-স্থির উপগ্রহের কক্ষপথ বিষুবরেখার সরাসরি ওপরে থাকবে",
+            b: "ভূ-স্থির উপগ্রহের কক্ষপথে সমস্ত উপগ্রহের ভর একই হবে",
+            c: "ভূ-স্থির উপগ্রহের কক্ষপথের আবর্তনকাল 24 ঘণ্টা",
+            d: "ভূ-স্থির উপগ্রহের কক্ষপথের সম্ভাব্য ব্যাসার্ধ একটি",
+          },
+          correct: "b",
+          explanation:
+            "<p>ভূ-স্থির উপগ্রহের কক্ষপথের বৈশিষ্ট্যগুলো নিম্নরূপ:</p><ul><li><b>ভূ-স্থির উপগ্রহের কক্ষপথ বিষুবরেখার সরাসরি ওপরে থাকবে:</b> এটি সঠিক। ভূ-স্থির উপগ্রহকে পৃথিবী থেকে স্থির দেখাতে হলে তাকে অবশ্যই বিষুবরেখার উপর দিয়ে আবর্তন করতে হবে।</li><li><b>ভূ-স্থির উপগ্রহের কক্ষপথের আবর্তনকাল 24 ঘণ্টা:</b> এটি সঠিক। পৃথিবীর আহ্নিক গতির আবর্তনকালের (24 ঘণ্টা) সাথে মিলিয়ে উপগ্রহটিকে ঘোরার জন্য এই আবর্তনকাল প্রয়োজন।</li><li><b>ভূ-স্থির উপগ্রহের কক্ষপথের সম্ভাব্য ব্যাসার্ধ একটি:</b> এটি সঠিক। একটি নির্দিষ্ট আবর্তনকালের জন্য (যেমন 24 ঘণ্টা), মহাকর্ষ বল এবং কেন্দ্রবিমুখী বলের সমতা বজায় রেখে একটি নির্দিষ্ট কক্ষপথের ব্যাসার্ধই সম্ভব (প্রায় 35,786 km ভূপৃষ্ঠ থেকে)।</li><li><b>ভূ-স্থির উপগ্রহের কক্ষপথে সমস্ত উপগ্রহের ভর একই হবে:</b> এটি সঠিক নয়। কৃত্রিম উপগ্রহের কক্ষপথে আবর্তনকাল বা কক্ষপথের ব্যাসার্ধ উপগ্রহের ভরের উপর নির্ভর করে না। একটি নির্দিষ্ট উচ্চতায় এবং নির্দিষ্ট আবর্তনকালের জন্য (যেমন 24 ঘণ্টা) যে কোনো ভরের উপগ্রহই ভূ-স্থির হতে পারে। উদাহরণস্বরূপ, ছোট যোগাযোগ উপগ্রহ থেকে বড় আবহাওয়া উপগ্রহ পর্যন্ত বিভিন্ন ভরের ভূ-স্থির উপগ্রহ থাকতে পারে।</li></ul><p>সুতরাং, সঠিক নয় অপশনটি হলো: <b>ভূ-স্থির উপগ্রহের কক্ষপথে সমস্ত উপগ্রহের ভর একই হবে</b>।</p>",
+        },
+        {
+          id: 28,
+          question: "পার্কিং কক্ষপথ হলো-",
+          options: {
+            a: "যে পথে বিমান চলাচল করে",
+            b: "পোলার উপগ্রহের কক্ষপথ",
+            c: "ভূ-স্থির উপগ্রহের কক্ষপথ",
+            d: "পৃথিবীর কক্ষপথ",
+          },
+          correct: "c",
+          explanation:
+            "<p><b>পার্কিং কক্ষপথ (Parking Orbit)</b> হলো ভূ-স্থির উপগ্রহের কক্ষপথের একটি অনানুষ্ঠানিক নাম। এই কক্ষপথকে জিওস্টেশনারি অরবিট (Geostationary Orbit - GSO) বা ভূ-সমলয় কক্ষপথও বলা হয়।</p><br><p>পার্কিং কক্ষপথের বৈশিষ্ট্য:</p><ul><li>এই কক্ষপথে স্থাপিত উপগ্রহ পৃথিবী থেকে দেখলে আকাশে একটি নির্দিষ্ট বিন্দুতে স্থির আছে বলে মনে হয়।</li><li>এর আবর্তনকাল পৃথিবীর আহ্নিক গতির আবর্তনকালের সমান (24 ঘণ্টা)।</li><li>এটি বিষুবরেখার উপর দিয়ে একটি বৃত্তাকার পথে আবর্তন করে।</li><li>এই কক্ষপথ ভূপৃষ্ঠ থেকে প্রায় 35,786 কিলোমিটার (22,236 মাইল) উচ্চতায় অবস্থিত।</li></ul><p>এই কক্ষপথ যোগাযোগ, টেলিভিশন সম্প্রচার, আবহাওয়া পূর্বাভাস এবং অন্যান্য অনেক অ্যাপ্লিকেশনের জন্য অত্যন্ত গুরুত্বপূর্ণ, কারণ এটি একটি নির্দিষ্ট ভৌগোলিক এলাকার উপর অবিচ্ছিন্নভাবে ডেটা সরবরাহ করতে পারে।</p><br><p>সুতরাং, পার্কিং কক্ষপথ হলো <b>ভূ-স্থির উপগ্রহের কক্ষপথ</b>।</p>",
+        },
+        {
+          id: 29,
+          question:
+            "ভূ-পৃষ্ঠ হতে h উচ্চতায় পৃথিবীকে প্রদক্ষিণরত কোনো কৃত্রিম উপগ্রহের বেগ-",
+          options: {
+            a: "v = GM/(R+h)",
+            b: "v = &#x221A;GM/(R+h)²",
+            c: "v = GM²/(R+h)",
+            d: "v = &#x221A;GM/(R+h)",
+          },
+          correct: "d",
+          explanation:
+            "<p>একটি কৃত্রিম উপগ্রহ যখন পৃথিবীকে একটি বৃত্তাকার কক্ষপথে প্রদক্ষিণ করে, তখন এর উপর ক্রিয়াশীল মহাকর্ষ বলই প্রয়োজনীয় কেন্দ্রমুখী বল যোগান দেয়।</p><br><p>মহাকর্ষ বল (F<sub>g</sub>) = GMm / (R+h)<sup>2</sup></p><br><p>যেখানে:</p><ul><li>G = মহাকর্ষীয় ধ্রুবক</li><li>M = পৃথিবীর ভর</li><li>m = উপগ্রহের ভর</li><li>R = পৃথিবীর ব্যাসার্ধ</li><li>h = ভূপৃষ্ঠ থেকে উপগ্রহের উচ্চতা (তাহলে পৃথিবীর কেন্দ্র থেকে উপগ্রহের দূরত্ব হবে R+h)</li></ul><br><p>কেন্দ্রমুখী বল (F<sub>c</sub>) = mv<sup>2</sup> / (R+h)</p><br><p>যেখানে v হলো উপগ্রহের কক্ষীয় বেগ।</p><br><p>মহাকর্ষ বল এবং কেন্দ্রমুখী বল সমান হওয়ায়:</p><br><p>GMm / (R+h)<sup>2</sup> = mv<sup>2</sup> / (R+h)</p><br><p>উভয় পক্ষ থেকে 'm' এবং '(R+h)' এর একটি করে পদ বাতিল করলে:</p><br><p>GM / (R+h) = v<sup>2</sup></p><br><p>সুতরাং, v = &#x221A;[GM/(R+h)]</p><br><p>এটিই ভূ-পৃষ্ঠ হতে h উচ্চতায় পৃথিবীকে প্রদক্ষিণরত কোনো কৃত্রিম উপগ্রহের বেগের সূত্র।</p>",
+        },
+        {
+          id: 30,
+          question:
+            "পৃথিবীকে প্রদক্ষিণরত একটি কৃত্রিম উপগ্রহের গতিশক্তি ও স্থিতিশক্তির অনুপাত-",
+          options: {
+            a: "1 : 2",
+            b: "1 : &#x221A;2",
+            c: "2 : 1",
+            d: "&#x221A;2 : 1",
+          },
+          correct: "a",
+          explanation:
+            "<p>একটি কৃত্রিম উপগ্রহ যখন পৃথিবীকে একটি বৃত্তাকার কক্ষপথে প্রদক্ষিণ করে, তখন তার গতিশক্তি এবং স্থিতিশক্তি একটি নির্দিষ্ট সম্পর্কে আবদ্ধ থাকে।</p><br><ul><li><b>গতিশক্তি (Kinetic Energy, K):</b> K = (1/2)mv<sup>2</sup></li><li>উপগ্রহের কক্ষীয় বেগ (v) = &#x221A;[GM/(R+h)]</li><li>সুতরাং, K = (1/2)m [GM/(R+h)] = GMm / (2(R+h))</li></ul><br><ul><li><b>স্থিতিশক্তি (Potential Energy, U):</b> U = -GMm / (R+h)</li><li>মহাকর্ষীয় বিভব শক্তি সর্বদাই ঋণাত্মক কারণ এটি একটি আকর্ষণমূলক বল।</li></ul><br><p>এখন, গতিশক্তি ও স্থিতিশক্তির অনুপাত বের করি:</p><br><p>K : U = [GMm / (2(R+h))] : [-GMm / (R+h)]</p><br><p>GMm / (2(R+h)) / [-GMm / (R+h)]</p><br><p>= 1 / (-2)</p><br><p>সুতরাং, অনুপাতটি 1 : -2। তবে, যখন অনুপাত চাওয়া হয়, তখন সাধারণত মানের অনুপাত বোঝানো হয়, ঋণাত্মক চিহ্ন উপেক্ষা করা হয়।</p><br><p>অর্থাৎ, K : |U| = 1 : 2</p><br><p>এই সম্পর্কটি প্রমাণ করে যে, কক্ষপথে আবর্তনরত বস্তুর গতিশক্তি তার স্থিতিশক্তির পরম মানের অর্ধেক।</p>",
+        },
+        {
+          id: 31,
+          question: "পৃথিবীর ঘনত্ব &#x03C1;-",
+          options: {
+            a: "5.5 x 10⁻² kgm⁻³",
+            b: "5.5 x 10⁻³ kgm⁻³",
+            c: "5.5 x 10³ kgm⁻³",
+            d: "5.5 x 10⁴ kgm⁻³",
+          },
+          correct: "c",
+          explanation:
+            "<p>পৃথিবীর গড় ঘনত্ব একটি গুরুত্বপূর্ণ ভৌত রাশি। এটি পৃথিবীর মোট ভরকে এর আয়তন দিয়ে ভাগ করে পাওয়া যায়।</p><br><ul><li>পৃথিবীর ভর (M) &#x2248; 5.972 &#xD7; 10<sup>24</sup> kg</li><li>পৃথিবীর গড় ব্যাসার্ধ (R) &#x2248; 6.371 &#xD7; 10<sup>6</sup> m</li><li>পৃথিবীর আয়তন (V) = (4/3)&#x03C0;R<sup>3</sup></li></ul><br><p>&#x03C1; = M / V</p><br><p>&#x03C1; = 5.972 &#xD7; 10<sup>24</sup> kg / [(4/3)&#x03C0;(6.371 &#xD7; 10<sup>6</sup> m)<sup>3</sup>]</p><br><p>&#x03C1; &#x2248; 5514 kg/m<sup>3</sup></p><br><p>এই মানকে বৈজ্ঞানিক স্বরলিপিতে প্রকাশ করলে হয় প্রায় <b>5.5 &#xD7; 10³ kgm⁻³</b>। এটি পৃথিবীর গড় ঘনত্ব, যা এর অভ্যন্তরীণ গঠনের বৈচিত্র্য নির্দেশ করে (কেন্দ্রে বেশি ঘন, পৃষ্ঠে কম ঘন)।</p>",
+        },
+        {
+          id: 32,
+          question:
+            "কোনো বস্তুকে কত বেগে নিক্ষেপ করলে এটি কৃত্রিম উপগ্রহে পরিণত হবে?",
+          options: {
+            a: "11.2 kms⁻¹",
+            b: "7.9 kms⁻¹",
+            c: "11.2 ms⁻¹",
+            d: "9.7 ms⁻¹",
+          },
+          correct: "b",
+          explanation:
+            "<p>কোনো বস্তুকে কৃত্রিম উপগ্রহে পরিণত করার জন্য তাকে একটি নির্দিষ্ট উচ্চতায় নির্দিষ্ট কক্ষীয় বেগে নিক্ষেপ করতে হয়, যাতে বস্তুটি পৃথিবীর মহাকর্ষীয় আকর্ষণে বৃত্তাকার বা উপবৃত্তাকার পথে ঘুরতে পারে। এই বেগকে <b>কক্ষীয় বেগ (Orbital Velocity)</b> বলে।</p><br><p>পৃথিবীর খুব কাছাকাছি (বায়ুমণ্ডলের বাইরে) একটি বৃত্তাকার কক্ষপথে আবর্তনের জন্য প্রয়োজনীয় সর্বনিম্ন কক্ষীয় বেগ হলো:</p><br><p>v<sub>o</sub> = &#x221A;(gR)</p><br><p>যেখানে:</p><ul><li>g = পৃথিবীর পৃষ্ঠে অভিকর্ষজ ত্বরণ &#x2248; 9.8 m/s<sup>2</sup></li><li>R = পৃথিবীর ব্যাসার্ধ &#x2248; 6.4 &#xD7; 10<sup>6</sup> m (6400 km)</li></ul><br><p>v<sub>o</sub> = &#x221A;(9.8 m/s<sup>2</sup> &#xD7; 6.4 &#xD7; 10<sup>6</sup> m)</p><br><p>v<sub>o</sub> = &#x221A;(62.72 &#xD7; 10<sup>6</sup>) m/s</p><br><p>v<sub>o</sub> &#x2248; 7919 m/s</p><br><p>v<sub>o</sub> &#x2248; 7.9 km/s</p><br><p>এই মানটি হলো পৃথিবীর পৃষ্ঠের নিকটবর্তী কক্ষপথের জন্য প্রথম মুক্তি বেগ। এটি মুক্তি বেগের (11.2 km/s) থেকে কম।</p><br><p>সুতরাং, কোনো বস্তুকে প্রায় <b>7.9 kms⁻¹</b> বেগে নিক্ষেপ করলে এটি কৃত্রিম উপগ্রহে পরিণত হবে।</p>",
+        },
+        {
+          id: 33,
+          question: "ভূ-স্থির উপগ্রহ হচ্ছে সেই উপগ্রহ যা-",
+          options: {
+            a: "অন্য সকল উপগ্রহের ন্যায় আপন অক্ষের চারদিকে পৃথিবীর ঘূর্ণনের বিপরীত দিকে ঘুরে",
+            b: "যা একটা সুবিধাজনক উচ্চতায় আপন অক্ষের চারদিকে পৃথিবীর সমান কৌণিক বেগে পৃথিবীর ঘূর্ণনের দিকে ঘুরে",
+            c: "পৃথিবী পৃষ্ঠ থেকে একটা নির্দিষ্ট উচ্চতায় স্থির অবস্থায় থাকে বলে মনে হয়",
+            d: "ওপরের কোনোটিই নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>একটি <b>ভূ-স্থির উপগ্রহ (Geostationary Satellite)</b> হলো এমন একটি কৃত্রিম উপগ্রহ যা পৃথিবী থেকে দেখলে আকাশে একটি নির্দিষ্ট স্থানে <b>স্থির আছে বলে মনে হয়</b>। এর জন্য কিছু শর্ত পূরণ করতে হয়:</p><ul><li><b>আবর্তনকাল:</b> উপগ্রহের আবর্তনকাল পৃথিবীর আহ্নিক গতির আবর্তনকালের সমান (24 ঘণ্টা)।</li><li><b>কক্ষপথের দিক:</b> উপগ্রহটি পৃথিবীর ঘূর্ণনের একই দিকে (পশ্চিম থেকে পূর্ব) ঘোরে।</li><li><b>কক্ষপথের উচ্চতা:</b> এটি বিষুবরেখার উপর দিয়ে একটি নির্দিষ্ট উচ্চতায় (প্রায় 35,786 km ভূপৃষ্ঠ থেকে) আবর্তন করে।</li></ul><br><p>এই শর্তগুলো পূরণ করার কারণে, ভূ-স্থির উপগ্রহটি পৃথিবী সাপেক্ষে স্থির থাকে এবং এটি যোগাযোগ, আবহাওয়া পর্যবেক্ষণ, এবং টেলিভিশন সম্প্রচারের মতো কাজে ব্যবহৃত হয়, কারণ এটি একটি নির্দিষ্ট এলাকার উপর অবিচ্ছিন্নভাবে সংকেত সরবরাহ করতে পারে।</p><br><p>সুতরাং, সঠিক ব্যাখ্যাটি হলো: <b>পৃথিবী পৃষ্ঠ থেকে একটা নির্দিষ্ট উচ্চতায় স্থির অবস্থায় থাকে বলে মনে হয়</b>।</p>",
+        },
+        {
+          id: 34,
+          question:
+            "একটি উপগ্রহ পৃথিবীকে কেন্দ্র করে বৃত্তাকার পথে ঘুরছে। হঠাৎ করে অভিকর্ষীয় বল যদি বিলুপ্ত হয়ে যায় তাহলে উপগ্রহটি-",
+          options: {
+            a: "একই দ্রুতিতে একই পথে ঘুরতে থাকবে",
+            b: "একই দ্রুতিতে আদি কক্ষপথের স্পর্শক বরাবর চলতে থাকবে",
+            c: "বর্ধিত দ্রুতিতে নিচে পড়ে যাবে",
+            d: "মূল কক্ষপথে কিছুক্ষণ চলে থেমে যাবে",
+          },
+          correct: "b",
+          explanation:
+            "<p>যখন একটি উপগ্রহ পৃথিবীকে কেন্দ্র করে বৃত্তাকার পথে ঘুরতে থাকে, তখন তার উপর পৃথিবীর মহাকর্ষ বল একটি <b>কেন্দ্রমুখী বল (Centripetal Force)</b> হিসেবে কাজ করে। এই কেন্দ্রমুখী বলই উপগ্রহটিকে কক্ষপথে ধরে রাখে এবং তাকে বৃত্তাকার পথে চলতে বাধ্য করে।</p><br><p>নিউটনের প্রথম গতিসূত্র (জড়তার সূত্র) অনুসারে, কোনো বস্তুর উপর যদি কোনো নিট বল প্রয়োগ না করা হয়, তাহলে বস্তুটি তার পূর্বের গতি বজায় রাখবে। অর্থাৎ, যদি বস্তুটি স্থির থাকে, তাহলে স্থিরই থাকবে, আর যদি গতিশীল থাকে, তাহলে একই বেগে সরলরেখায় চলতে থাকবে।</p><br><p>যদি হঠাৎ করে অভিকর্ষীয় বল (যা কেন্দ্রমুখী বল হিসেবে কাজ করছিল) বিলুপ্ত হয়ে যায়, তাহলে উপগ্রহের উপর আর কোনো বল কাজ করবে না যা তাকে বৃত্তাকার পথে ধরে রাখবে। ফলে, উপগ্রহটি যে মুহূর্তে অভিকর্ষীয় বল বিলুপ্ত হয়েছে, সেই মুহূর্তে তার যে বেগ ছিল, সেই <b>বেগের দিকে একটি সরলরেখা বরাবর চলতে থাকবে</b>। বৃত্তাকার পথের যেকোনো বিন্দুতে তার গতির দিক সেই বিন্দুর স্পর্শক বরাবর হয়।</p><br><p>সুতরাং, উপগ্রহটি <b>একই দ্রুতিতে আদি কক্ষপথের স্পর্শক বরাবর চলতে থাকবে</b>।</p>",
+        },
+        {
+          id: 35,
+          question: "দুটি উপগ্রহ একই বৃত্তাকার কক্ষপথে আবর্তনরত। অবশ্যই তাদের-",
+          options: {
+            a: "ভর সমান",
+            b: "কৌণিক ভরবেগ সমান",
+            c: "গতিশক্তি সমান",
+            d: "দ্রুতি সমান",
+          },
+          correct: "d",
+          explanation:
+            "<p>একটি কৃত্রিম উপগ্রহের কক্ষীয় বেগ (v) এর সূত্র হলো:</p><br><p>v = &#x221A;[GM/(R+h)]</p><br><p>যেখানে:</p><ul><li>G = মহাকর্ষীয় ধ্রুবক</li><li>M = যে গ্রহকে প্রদক্ষিণ করছে তার ভর (এখানে পৃথিবীর ভর)</li><li>R = গ্রহের ব্যাসার্ধ</li><li>h = ভূপৃষ্ঠ থেকে উপগ্রহের উচ্চতা</li></ul><br><p>যদি দুটি উপগ্রহ <b>একই বৃত্তাকার কক্ষপথে</b> আবর্তন করে, তার মানে হলো তাদের <b>কক্ষপথের ব্যাসার্ধ (R+h) একই</b>।</p><br><p>এই সূত্র থেকে দেখা যায়, কক্ষীয় বেগ (v) শুধুমাত্র G, M এবং (R+h) এর উপর নির্ভরশীল। উপগ্রহের ভরের (m) উপর এটি নির্ভরশীল নয়।</p><br><p>সুতরাং, যেহেতু দুটি উপগ্রহ একই কক্ষপথে আছে (একই R+h), তাদের <b>দ্রুতি (বেগ) অবশ্যই সমান হবে</b>, regardless of their individual masses.</p><br><p>অন্যান্য অপশনগুলো ভুল কারণ:</p><ul><li><b>ভর সমান:</b> কক্ষীয় বেগ ভরের উপর নির্ভরশীল নয়, তাই তাদের ভর ভিন্ন হতে পারে।</li><li><b>কৌণিক ভরবেগ সমান:</b> কৌণিক ভরবেগ (L = mvr) ভরের উপর নির্ভরশীল। যেহেতু ভর ভিন্ন হতে পারে, তাই কৌণিক ভরবেগও ভিন্ন হতে পারে।</li><li><b>গতিশক্তি সমান:</b> গতিশক্তি (K = (1/2)mv<sup>2</sup>) ভরের উপর নির্ভরশীল। যেহেতু ভর ভিন্ন হতে পারে এবং বেগ সমান হলেও ভর ভিন্ন হওয়ায় গতিশক্তি ভিন্ন হতে পারে।</li></ul>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                        <label class="option" data-option="${option}">
+                                                          <div class="circle">${option}</div>
+                                                          <span class="option-text">${question.options[option]}</span>
+                                                        </label>
+                                                      `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                           <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                           <div class="explanation-content">
+                                                             <div class="explanation-label">ব্যাখ্যা:</div>
+                                                             ${question.explanation}
+                                                           </div>
+                                                         </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                      <p class="question-label">${
+                                                        index + 1
+                                                      }. ${
+            question.question
+          }</p>
+                                                      <div class="options">
+                                                        ${optionsHTML}
+                                                      </div>
+                                                      ${explanationHTML}
+                                                    `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
